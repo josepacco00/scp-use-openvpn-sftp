@@ -1,7 +1,9 @@
-import { Construct } from "constructs";
+import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
+
+import { Construct } from "constructs";
 import { Duration } from "aws-cdk-lib";
 
 export interface DatabaseProps {
@@ -34,6 +36,7 @@ export class Database extends Construct {
             this,
             "ClusterParameterGroup",
             {
+                description: "Parameter group for Walon Aurora PostgreSQL 16.4 cluster",
                 engine: rds.DatabaseClusterEngine.auroraPostgres({
                     version: rds.AuroraPostgresEngineVersion.VER_16_4,
                 }),
@@ -44,15 +47,16 @@ export class Database extends Construct {
         );
 
         this.database = new rds.DatabaseCluster(this, "Database", {
+            clusterIdentifier: `${props.env}-${props.project}-aurora-cluster`,
             engine: rds.DatabaseClusterEngine.auroraPostgres({
                 version: rds.AuroraPostgresEngineVersion.VER_16_4,
             }),
             writer: rds.ClusterInstance.serverlessV2("DatabaseWriter", {
+                instanceIdentifier: `${props.env}-${props.project}-aurora-writer`,
                 enablePerformanceInsights: true,
             }),
-            // readers: [rds.ClusterInstance.serverlessV2("DatabaseReader")],
             securityGroups: [props.securityGroup],
-            defaultDatabaseName: "cirkula",
+            defaultDatabaseName: "walon",
             credentials: rds.Credentials.fromSecret(this.secret),
             vpc: props.vpc,
             vpcSubnets: {
@@ -63,6 +67,7 @@ export class Database extends Construct {
             parameterGroup: clusterParameterGroup,
             serverlessV2MinCapacity: 0,
             serverlessV2MaxCapacity: 5,
+            removalPolicy: process.env.ENV === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
         });
     }
 }

@@ -20,7 +20,7 @@ export class Network extends Construct {
 
         this.vpc = new ec2.Vpc(this, "VPC", {
             vpcName: `${props.env}-${props.project}-vpc`,
-            natGateways: 1,
+            natGateways: 0,
             gatewayEndpoints: {
                 S3: {
                     service: ec2.GatewayVpcEndpointAwsService.S3,

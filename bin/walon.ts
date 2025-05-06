@@ -8,7 +8,7 @@ new WalonStack(app, 'WalonStack', {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION,
   },
-  description: "AWS Cirkula Stack",
+  description: "AWS Walon Stack",
   stackName: `${process.env.ENV}-${process.env.PROJECT}-stack`,
 });
 

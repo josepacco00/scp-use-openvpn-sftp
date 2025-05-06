@@ -30,12 +30,12 @@ export class WalonStack extends cdk.Stack {
       SecurityGroup: network.bastionSG
     });
 
-    const database = new Database(this, 'Database', {
-      env: envParameter.valueAsString,
-      project: projectParameter.valueAsString,
-      vpc: network.vpc,
-      securityGroup: network.databaseSG
-    });
+    // const database = new Database(this, 'Database', {
+    //   env: envParameter.valueAsString,
+    //   project: projectParameter.valueAsString,
+    //   vpc: network.vpc,
+    //   securityGroup: network.databaseSG
+    // });
 
     const bastion = new Bastion(this, 'Bastion', {
       env: envParameter.valueAsString,
