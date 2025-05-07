@@ -78,8 +78,31 @@ service iptables save
                 destinationCidrBlock: '0.0.0.0/0',
             });
         });
+
+        const amiInstance = new ec2.Instance(this, 'amiInstance', {
+            instanceName: `${props.env}-${props.project}-ami-instance`,
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
+            machineImage: ec2.MachineImage.latestAmazonLinux2023({
+                cachedInContext: true, // Prevent replace instance on future deploys
+            }),
+            vpc: props.vpc,
+            vpcSubnets: {
+                subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+            },
+            securityGroup: props.bastionSG,
+            role: ssmRole,
+            associatePublicIpAddress: false,
+        });
+
     }
 }
 
 // # Verifica el log del User Data
 // cat /var/log/cloud-init-output.log
+
+// # en AmazonLinux2023, para conocer la metadata de la instancia mediante la ip 169.254.169.254, es con TOKEN
+// TOKEN=$(curl --request PUT "http://169.254.169.254/latest/api/token" --header "X-aws-ec2-metadata-token-ttl-seconds: 3600")
+// INSTANCE_METADATA=$(curl -s http://169.254.169.254/latest/meta-data/ --header "X-aws-ec2-metadata-token: $TOKEN")
+// IP_PUBLIC=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 --header "X-aws-ec2-metadata-token: $TOKEN")
+
+//https://medium.com/@sumitkumar.it81/get-instance-metadata-in-amazon-linux-2023-al2023-e4bf0611d0ad

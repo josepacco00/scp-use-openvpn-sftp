@@ -27,7 +27,7 @@ export class WalonStack extends cdk.Stack {
 
     const storage = new Storage(this, 'Storage', {
       vpc: network.vpc,
-      SecurityGroup: network.bastionSG
+      SecurityGroup: network.efsSG
     });
 
     // const database = new Database(this, 'Database', {

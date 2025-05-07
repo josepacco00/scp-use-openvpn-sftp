@@ -9,6 +9,7 @@ export interface NetworkProps {
 export class Network extends Construct {
     public readonly vpc: ec2.Vpc;
     public readonly albSG: ec2.SecurityGroup;
+    public readonly webLayerSG: ec2.SecurityGroup;
     public readonly bastionSG: ec2.SecurityGroup;
     public readonly databaseSG: ec2.SecurityGroup;
     public readonly lambdaSG: ec2.SecurityGroup;
@@ -51,10 +52,24 @@ export class Network extends Construct {
             ],
         });
 
-        this.databaseSG = new ec2.SecurityGroup(this, 'DatabaseSG', { vpc: this.vpc });
-        this.albSG = new ec2.SecurityGroup(this, 'AlbSG', { vpc: this.vpc });
-        this.bastionSG = new ec2.SecurityGroup(this, 'BastionSG', { vpc: this.vpc });
-        this.lambdaSG = new ec2.SecurityGroup(this, 'LambdaSG', { vpc: this.vpc });
-        this.efsSG = new ec2.SecurityGroup(this, 'EfsSG', { vpc: this.vpc });
+        this.databaseSG = new ec2.SecurityGroup(this, 'DatabaseSG', { vpc: this.vpc, description: 'Security Group para la Base de Datos' });
+        this.albSG = new ec2.SecurityGroup(this, 'AlbSG', { vpc: this.vpc, description: 'Security Group para el ALB' });
+        this.webLayerSG = new ec2.SecurityGroup(this, 'AppLayerSG', { vpc: this.vpc, description: 'Security Group para la Capa de Aplicaciones' });
+        this.bastionSG = new ec2.SecurityGroup(this, 'BastionSG', { vpc: this.vpc, description: 'Security Group para el Bastion Host' });
+        this.lambdaSG = new ec2.SecurityGroup(this, 'LambdaSG', { vpc: this.vpc, description: 'Security Group para Lambda' });
+        this.efsSG = new ec2.SecurityGroup(this, 'EfsSG', { vpc: this.vpc, description: 'Security Group para EFS' });
+
+        this.efsSG.addIngressRule(this.webLayerSG, ec2.Port.tcp(2049), 'Allow access to EFS');
+        this.databaseSG.addIngressRule(this.webLayerSG, ec2.Port.tcp(3306), 'Allow access to Database');
+        this.databaseSG.addIngressRule(this.bastionSG, ec2.Port.tcp(3306), 'Allow access to Database');
+
+        this.webLayerSG.addIngressRule(this.albSG, ec2.Port.tcp(80), 'Allow access to ALB');
+
+        //this.albSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(80), 'Allow inbound traffic from anywhere on port 80');
+        //this.albSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(443), 'Allow inbound traffic from anywhere on port 443');
+
+        this.bastionSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.allTraffic(), 'Allow all traffic from VPC')
+        this.bastionSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(1194));
+        //this.apiOpenSearchALBSG.addIngressRule(ec2.Peer.prefixList('pl-3b927c52'), ec2.Port.allTcp(), 'Allow trafic access from CDN');
     }
 }

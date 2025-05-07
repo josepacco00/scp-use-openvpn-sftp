@@ -17,20 +17,23 @@ export class Storage extends Construct {
         this.efs = new efs.FileSystem(this, 'StorageEfs', {
             vpc: props.vpc,
             securityGroup: props.SecurityGroup,
+            vpcSubnets: {
+                subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+            },
             removalPolicy: process.env.ENV === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
         });
 
-        this.accessPoint = this.efs.addAccessPoint('WordpressAccessPoint', {
-            createAcl: {
-                ownerGid: '1001',
-                ownerUid: '1001',
-                permissions: '755',
-            },
-            path: '/',
-            posixUser: {
-                gid: '1001',
-                uid: '1001',
-            },
-        });
+        // this.accessPoint = this.efs.addAccessPoint('WordpressAccessPoint', {
+        //     createAcl: {
+        //         ownerGid: '1001',
+        //         ownerUid: '1001',
+        //         permissions: '755',
+        //     },
+        //     path: '/',
+        //     posixUser: {
+        //         gid: '1001',
+        //         uid: '1001',
+        //     },
+        // });
     }
 }
