@@ -23,7 +23,7 @@ export class Bastion extends Construct {
 
         const bastionHost = new ec2.Instance(this, 'BastionHost', {
             instanceName: `${props.env}-${props.project}-bastion-host`,
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.MICRO),
             machineImage: ec2.MachineImage.latestAmazonLinux2023({
                 cachedInContext: true, // Prevent replace instance on future deploys
             }),
@@ -79,20 +79,20 @@ service iptables save
             });
         });
 
-        const amiInstance = new ec2.Instance(this, 'amiInstance', {
-            instanceName: `${props.env}-${props.project}-ami-instance`,
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
-            machineImage: ec2.MachineImage.latestAmazonLinux2023({
-                cachedInContext: true, // Prevent replace instance on future deploys
-            }),
-            vpc: props.vpc,
-            vpcSubnets: {
-                subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-            },
-            securityGroup: props.bastionSG,
-            role: ssmRole,
-            associatePublicIpAddress: false,
-        });
+        // const amiInstance = new ec2.Instance(this, 'amiInstance', {
+        //     instanceName: `${props.env}-${props.project}-ami-instance`,
+        //     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
+        //     machineImage: ec2.MachineImage.latestAmazonLinux2023({
+        //         cachedInContext: true, // Prevent replace instance on future deploys
+        //     }),
+        //     vpc: props.vpc,
+        //     vpcSubnets: {
+        //         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+        //     },
+        //     securityGroup: props.bastionSG,
+        //     role: ssmRole,
+        //     associatePublicIpAddress: false,
+        // });
 
     }
 }

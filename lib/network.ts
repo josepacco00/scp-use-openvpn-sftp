@@ -64,6 +64,7 @@ export class Network extends Construct {
         this.databaseSG.addIngressRule(this.bastionSG, ec2.Port.tcp(3306), 'Allow access to Database');
 
         this.webLayerSG.addIngressRule(this.albSG, ec2.Port.tcp(80), 'Allow access to ALB');
+        this.webLayerSG.addIngressRule(this.bastionSG, ec2.Port.allTraffic(), 'Allow access to Bastion');
 
         //this.albSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(80), 'Allow inbound traffic from anywhere on port 80');
         //this.albSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(443), 'Allow inbound traffic from anywhere on port 443');

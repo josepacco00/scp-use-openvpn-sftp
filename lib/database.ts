@@ -36,20 +36,20 @@ export class Database extends Construct {
             this,
             "ClusterParameterGroup",
             {
-                description: "Parameter group for Walon Aurora PostgreSQL 16.4 cluster",
-                engine: rds.DatabaseClusterEngine.auroraPostgres({
-                    version: rds.AuroraPostgresEngineVersion.VER_16_4,
+                description: "Parameter group for Walon Aurora Mysql cluster",
+                engine: rds.DatabaseClusterEngine.auroraMysql({
+                    version: rds.AuroraMysqlEngineVersion.VER_3_05_2,
                 }),
                 parameters: {
-                    timezone: "UTC",
+                    //timezone: "UTC", -> NO FUNCIONA EN AURORA MYSQL 
                 },
             }
         );
 
         this.database = new rds.DatabaseCluster(this, "Database", {
             clusterIdentifier: `${props.env}-${props.project}-aurora-cluster`,
-            engine: rds.DatabaseClusterEngine.auroraPostgres({
-                version: rds.AuroraPostgresEngineVersion.VER_16_4,
+            engine: rds.DatabaseClusterEngine.auroraMysql({
+                version: rds.AuroraMysqlEngineVersion.VER_3_05_2,
             }),
             writer: rds.ClusterInstance.serverlessV2("DatabaseWriter", {
                 instanceIdentifier: `${props.env}-${props.project}-aurora-writer`,
@@ -65,7 +65,7 @@ export class Database extends Construct {
             storageEncrypted: true,
             monitoringInterval: Duration.minutes(1),
             parameterGroup: clusterParameterGroup,
-            serverlessV2MinCapacity: 0,
+            serverlessV2MinCapacity: 0.5,
             serverlessV2MaxCapacity: 5,
             removalPolicy: process.env.ENV === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
         });
