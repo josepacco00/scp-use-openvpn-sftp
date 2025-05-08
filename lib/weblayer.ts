@@ -5,7 +5,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 
 
-interface AppLayerProps {
+interface WebLayerProps {
     readonly vpc: ec2.Vpc;
     readonly weblayerSG: ec2.SecurityGroup;
     readonly amiId: string;
@@ -13,10 +13,10 @@ interface AppLayerProps {
 
 }
 
-export class AppLayer extends Construct {
+export class WebLayer extends Construct {
     public readonly autoscalingGroup: autoscaling.AutoScalingGroup;
 
-    constructor(scope: Construct, id: string, props: AppLayerProps) {
+    constructor(scope: Construct, id: string, props: WebLayerProps) {
         super(scope, id);
 
         const instancesRole = new iam.Role(this, 'InstancesRole', {
@@ -30,14 +30,13 @@ export class AppLayer extends Construct {
         });
 
         const launchTemplate = new ec2.LaunchTemplate(this, 'LaunchTemplate', {
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
-            machineImage: ec2.MachineImage.latestAmazonLinux2023({
-                cachedInContext: true, // Prevent replace instance on future deploys
-            }),
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.MICRO),
+            machineImage: ec2.MachineImage.genericLinux({ 'us-east-1': props.amiId }),
             securityGroup: props.weblayerSG,
             role: instancesRole,
             userData: ec2.UserData.custom(`#!/bin/bash
-mount -t efs ${props.efsId} /var/www/
+timedatectl set-timezone America/Lima
+mount -t efs ${props.efsId}:/ /var/www/
 
 service php-fpm start
 service nginx start`),
@@ -46,11 +45,11 @@ service nginx start`),
         this.autoscalingGroup = new autoscaling.AutoScalingGroup(this, "ASG", {
             vpc: props.vpc,
             vpcSubnets: {
-                subnetType: ec2.SubnetType.PUBLIC,
+                subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
             },
             minCapacity: 1, //
             maxCapacity: 1, //
-            healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(60) }),
+            //healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(60) }),
             cooldown: cdk.Duration.seconds(60),
             mixedInstancesPolicy: {
                 launchTemplate: launchTemplate,

@@ -5,6 +5,8 @@ import { Network } from './network';
 import { Storage } from './storage';
 import { Bastion } from './bastion';
 import { Database } from './database';
+import { WebLayer } from './weblayer';
+import { LoadBalancer } from './alb';
 //import { Application } from './application';
 
 export class WalonStack extends cdk.Stack {
@@ -18,6 +20,9 @@ export class WalonStack extends cdk.Stack {
     const projectParameter = new cdk.CfnParameter(this, 'Project', {
       default: process.env.PROJECT
     });
+
+    const certificateArnParameter = new cdk.CfnParameter(this, 'CertificateArn');
+    const amiIdParameter = new cdk.CfnParameter(this, 'AmiId');
 
     //Base Resources
     const network = new Network(this, "Network", {
@@ -44,5 +49,18 @@ export class WalonStack extends cdk.Stack {
       bastionSG: network.bastionSG
     });
 
+    const webLayer = new WebLayer(this, 'AppLayer', {
+      vpc: network.vpc,
+      weblayerSG: network.webLayerSG,
+      amiId: amiIdParameter.valueAsString,
+      efsId: storage.efs.fileSystemId
+    });
+
+    const alb = new LoadBalancer(this, 'LoadBalancer', {
+      vpc: network.vpc,
+      albSG: network.albSG,
+      certificateArn: certificateArnParameter.valueAsString,
+      autoscalingGroup: webLayer.autoscalingGroup
+    });
   }
 }
