@@ -30,7 +30,7 @@ export class WebLayer extends Construct {
         });
 
         const launchTemplate = new ec2.LaunchTemplate(this, 'LaunchTemplate', {
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.MICRO),
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.SMALL),
             machineImage: ec2.MachineImage.genericLinux({ 'us-east-1': props.amiId }),
             securityGroup: props.weblayerSG,
             role: instancesRole,

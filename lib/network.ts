@@ -60,6 +60,7 @@ export class Network extends Construct {
         this.efsSG = new ec2.SecurityGroup(this, 'EfsSG', { vpc: this.vpc, description: 'Security Group para EFS' });
 
         this.efsSG.addIngressRule(this.webLayerSG, ec2.Port.tcp(2049), 'Allow access to EFS');
+        this.efsSG.addIngressRule(this.bastionSG, ec2.Port.tcp(2049), 'Allow access to EFS');
         this.databaseSG.addIngressRule(this.webLayerSG, ec2.Port.tcp(3306), 'Allow access to Database');
         this.databaseSG.addIngressRule(this.bastionSG, ec2.Port.tcp(3306), 'Allow access to Database');
 
