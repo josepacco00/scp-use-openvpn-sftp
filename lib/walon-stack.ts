@@ -7,7 +7,7 @@ import { Bastion } from './bastion';
 import { Database } from './database';
 import { WebLayer } from './weblayer';
 import { LoadBalancer } from './alb';
-//import { Application } from './application';
+import { Cdn } from './cdn';
 
 export class WalonStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -21,6 +21,7 @@ export class WalonStack extends cdk.Stack {
       default: process.env.PROJECT
     });
 
+    const domainNameParameter = new cdk.CfnParameter(this, 'DomainName');
     const certificateArnParameter = new cdk.CfnParameter(this, 'CertificateArn');
     const amiIdParameter = new cdk.CfnParameter(this, 'AmiId');
 
@@ -61,6 +62,14 @@ export class WalonStack extends cdk.Stack {
       albSG: network.albSG,
       certificateArn: certificateArnParameter.valueAsString,
       autoscalingGroup: webLayer.autoscalingGroup
+    });
+
+    const cdn = new Cdn(this, 'Cdn', {
+      env: envParameter.valueAsString,
+      project: projectParameter.valueAsString,
+      loadbalancer: alb.loadBalancer,
+      certificateArn: certificateArnParameter.valueAsString,
+      domainName: domainNameParameter.valueAsString,
     });
   }
 }
