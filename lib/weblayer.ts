@@ -47,8 +47,8 @@ service nginx start`),
             vpcSubnets: {
                 subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
             },
-            minCapacity: 1, //
-            maxCapacity: 1, //
+            minCapacity: 2, //
+            maxCapacity: 5, //
             //healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(60) }),
             cooldown: cdk.Duration.seconds(60),
             mixedInstancesPolicy: {
