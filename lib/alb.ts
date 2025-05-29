@@ -50,7 +50,7 @@ export class LoadBalancer extends Construct {
                 path: "/health/check.php",
                 interval: cdk.Duration.seconds(10),
                 timeout: cdk.Duration.seconds(5),
-                healthyHttpCodes: "200,303,302", // Solo deberia estar el 200
+                healthyHttpCodes: "200", // Solo deberia estar el 200 //200, 303, 302
                 port: "80",
                 healthyThresholdCount: 3,
                 unhealthyThresholdCount: 2,

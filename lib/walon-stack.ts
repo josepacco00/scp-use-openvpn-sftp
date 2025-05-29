@@ -7,6 +7,7 @@ import { Bastion } from './bastion';
 import { Database } from './database';
 import { WebLayer } from './weblayer';
 import { LoadBalancer } from './alb';
+import { Waf } from './waf';
 import { Cdn } from './cdn';
 
 export class WalonStack extends cdk.Stack {
@@ -64,12 +65,18 @@ export class WalonStack extends cdk.Stack {
       autoscalingGroup: webLayer.autoscalingGroup
     });
 
+    const waf = new Waf(this, 'Waf', {
+      env: envParameter.valueAsString,
+      project: projectParameter.valueAsString,
+    });
+
     const cdn = new Cdn(this, 'Cdn', {
       env: envParameter.valueAsString,
       project: projectParameter.valueAsString,
       loadbalancer: alb.loadBalancer,
       certificateArn: certificateArnParameter.valueAsString,
       domainName: domainNameParameter.valueAsString,
+      webAclId: waf.webAcl.attrArn,
     });
   }
 }

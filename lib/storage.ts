@@ -21,6 +21,9 @@ export class Storage extends Construct {
                 subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
             },
             removalPolicy: process.env.ENV === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+            throughputMode: efs.ThroughputMode.BURSTING,
+            // throughputMode: efs.ThroughputMode.PROVISIONED, //--> lo usamos para levantar wordpress
+            // provisionedThroughputPerSecond: cdk.Size.mebibytes(64), // 64 MiB/s
         });
 
         // this.accessPoint = this.efs.addAccessPoint('WordpressAccessPoint', {

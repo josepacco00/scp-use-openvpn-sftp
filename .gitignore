@@ -5,6 +5,8 @@ node_modules
 
 *.env
 /test-files
+/lib/webmaintance.ts
+/amis
 
 # CDK asset staging directory
 .cdk.staging

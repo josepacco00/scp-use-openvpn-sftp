@@ -10,7 +10,6 @@ interface WebLayerProps {
     readonly weblayerSG: ec2.SecurityGroup;
     readonly amiId: string;
     readonly efsId: string;
-
 }
 
 export class WebLayer extends Construct {

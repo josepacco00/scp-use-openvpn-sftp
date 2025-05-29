@@ -4,6 +4,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfrontOrigins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as waf from 'aws-cdk-lib/aws-wafv2';
 
 interface CdnProps {
     readonly env: string;
@@ -11,6 +12,7 @@ interface CdnProps {
     readonly loadbalancer: elbv2.ApplicationLoadBalancer;
     readonly certificateArn: string;
     readonly domainName: string;
+    readonly webAclId: string;
 }
 
 export class Cdn extends Construct {
@@ -21,7 +23,7 @@ export class Cdn extends Construct {
 
         const albOrigin = new cloudfrontOrigins.LoadBalancerV2Origin(props.loadbalancer, {
             protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
-            readTimeout: Duration.seconds(60),
+            readTimeout: Duration.seconds(90),
         });
 
         // 1. Política de NO caché para el comportamiento por defecto
@@ -130,6 +132,7 @@ export class Cdn extends Construct {
             additionalBehaviors: additionalBehaviors,
             certificate: acm.Certificate.fromCertificateArn(this, 'Certificate', props.certificateArn),
             domainNames: [props.domainName],
+            webAclId: props.webAclId,
             //priceClass: cloudfront.PriceClass.PRICE_CLASS_ALL,
         });
     }
