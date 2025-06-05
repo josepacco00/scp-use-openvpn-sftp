@@ -7,7 +7,6 @@ node_modules
 /test-files
 /lib/webmaintance.ts
 /amis
-/ami
 
 # CDK asset staging directory
 .cdk.staging
