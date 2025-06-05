@@ -31,6 +31,8 @@ export class Network extends Construct {
                 },
             },
             availabilityZones: ["us-east-1c", "us-east-1d"],
+            //availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d"],
+            //availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f"],
             ipAddresses: ec2.IpAddresses.cidr(process.env.VPC_CIDR as string),
             restrictDefaultSecurityGroup: false,
             subnetConfiguration: [

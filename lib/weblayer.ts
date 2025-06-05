@@ -29,12 +29,14 @@ export class WebLayer extends Construct {
         });
 
         const launchTemplate = new ec2.LaunchTemplate(this, 'LaunchTemplate', {
-            instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3A, ec2.InstanceSize.SMALL),
+            instanceType: ec2.InstanceType.of(ec2.InstanceClass.C8G, ec2.InstanceSize.LARGE),
+            //instanceType: ec2.InstanceType.of(ec2.InstanceClass.C7A, ec2.InstanceSize.MEDIUM),
             machineImage: ec2.MachineImage.genericLinux({ 'us-east-1': props.amiId }),
             securityGroup: props.weblayerSG,
             role: instancesRole,
             userData: ec2.UserData.custom(`#!/bin/bash
 timedatectl set-timezone America/Lima
+yum install htop -y
 mount -t efs ${props.efsId}:/ /var/www/
 
 service php-fpm start
@@ -47,14 +49,19 @@ service nginx start`),
                 subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
             },
             minCapacity: 2, //
-            maxCapacity: 5, //
-            //healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(60) }),
+            desiredCapacity: 2, //
+            maxCapacity: 6, //
+            healthCheck: autoscaling.HealthCheck.elb({ grace: cdk.Duration.seconds(60) }),
+            instanceMonitoring: autoscaling.Monitoring.BASIC,
             cooldown: cdk.Duration.seconds(60),
             mixedInstancesPolicy: {
                 launchTemplate: launchTemplate,
                 instancesDistribution: {
-                    onDemandBaseCapacity: 2,
+                    onDemandBaseCapacity: 4,
                     onDemandPercentageAboveBaseCapacity: 0,
+                    //onDemandPercentageAboveBaseCapacity: 50,   // 50% On-Demand, 50% Spot
+                    //spotAllocationStrategy: 'capacity-optimized', // Mejor estrategia para Spot
+
                 },
             },
         });

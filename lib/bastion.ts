@@ -70,14 +70,14 @@ service iptables save
             ]
         });
 
-        let routeCount = 1;
-        props.vpc.privateSubnets.forEach((subnet) => {
-            new ec2.CfnRoute(this, `PrivateSubnetRoute${routeCount++}`, {
-                routeTableId: subnet.routeTable.routeTableId,
-                instanceId: bastionHost.instanceId,
-                destinationCidrBlock: '0.0.0.0/0',
-            });
-        });
+        // let routeCount = 1;
+        // props.vpc.privateSubnets.forEach((subnet) => {
+        //     new ec2.CfnRoute(this, `PrivateSubnetRoute${routeCount++}`, {
+        //         routeTableId: subnet.routeTable.routeTableId,
+        //         instanceId: bastionHost.instanceId,
+        //         destinationCidrBlock: '0.0.0.0/0',
+        //     });
+        // });
 
         // const amiInstance = new ec2.Instance(this, 'amiInstance', {
         //     instanceName: `${props.env}-${props.project}-ami-instance`,

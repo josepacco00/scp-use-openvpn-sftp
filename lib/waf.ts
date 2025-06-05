@@ -19,6 +19,13 @@ export class Waf extends Construct {
             addresses: [],
         });
 
+        const whiteListPawment = new waf.CfnIPSet(this, 'WhiteListPayment', {
+            name: `${props.env}-${props.project}-whitelist-payment`,
+            scope: 'CLOUDFRONT',
+            ipAddressVersion: 'IPV4',
+            addresses: [],
+        });
+
         this.webAcl = new waf.CfnWebACL(this, 'WebAcl', {
             name: `${props.env}-${props.project}-waf`,
             defaultAction: {
@@ -31,6 +38,7 @@ export class Waf extends Construct {
                 sampledRequestsEnabled: true,
             },
             rules: [
+                //white-list
                 {
                     name: 'AllowListRule',
                     priority: 0,
@@ -48,10 +56,28 @@ export class Waf extends Construct {
                         metricName: `${props.env}-${props.project}-waf-allowlist`,
                     },
                 },
+                //white-list-payment
+                {
+                    name: 'AllowListPaymentRule',
+                    priority: 1,
+                    action: {
+                        allow: {},
+                    },
+                    statement: {
+                        ipSetReferenceStatement: {
+                            arn: whiteListPawment.attrArn,
+                        },
+                    },
+                    visibilityConfig: {
+                        sampledRequestsEnabled: true,
+                        cloudWatchMetricsEnabled: true,
+                        metricName: `${props.env}-${props.project}-waf-allowlist-payment`,
+                    },
+                },
                 // Core rule set
                 {
                     name: 'AWS-AWSManagedRulesCommonRuleSet',
-                    priority: 1,
+                    priority: 2,
                     overrideAction: {
                         none: {},
                     },
@@ -71,7 +97,7 @@ export class Waf extends Construct {
                 // Amazon IP reputation list
                 {
                     name: 'AWS-AWSManagedRulesAmazonIpReputationList',
-                    priority: 2,
+                    priority: 3,
                     overrideAction: {
                         none: {},
                     },
@@ -90,14 +116,14 @@ export class Waf extends Construct {
                 // Limite de solicitudes x IP
                 {
                     name: 'RateLimitRule',
-                    priority: 3,
+                    priority: 4,
                     action: {
                         block: {}, // --> Bloquear, para produccion, previa evaluacion
                         //count: {}, //--> Solo contabilizar, no bloquear
                     },
                     statement: {
                         rateBasedStatement: {
-                            limit: 2000,
+                            limit: 500,
                             aggregateKeyType: 'FORWARDED_IP',
                             forwardedIpConfig: {
                                 fallbackBehavior: 'MATCH',
@@ -114,7 +140,7 @@ export class Waf extends Construct {
                 // SQL database
                 {
                     name: 'AWS-AWSManagedRulesSQLiRuleSet',
-                    priority: 4,
+                    priority: 5,
                     overrideAction: {
                         none: {},
                     },
@@ -130,6 +156,27 @@ export class Waf extends Construct {
                         metricName: `${props.env}-${props.project}-waf-sql-injection`,
                     },
                 },
+                //Amazon Boots <--! se añadio
+                // {
+                //     name: 'AWSManagedRulesBotControlRuleSet',
+                //     priority: 6,
+                //     overrideAction: { none: {} },
+                //     statement: {
+                //         managedRuleGroupStatement: {
+                //             vendorName: 'AWS',
+                //             name: 'AWSManagedRulesBotControlRuleSet',
+                //         },
+                //     },
+                //     visibilityConfig: {
+                //         sampledRequestsEnabled: true,
+                //         cloudWatchMetricsEnabled: true,
+                //         metricName: `${process.env.ENV}-${process.env.PROJECT}-apiGateway-WAF--bot-control`,
+                //     },
+                // },
+
+
+
+
                 // {
                 //     name: 'AWS-AWSManagedRulesWordPressRuleSet',
                 //     priority: 2,
@@ -151,6 +198,7 @@ export class Waf extends Construct {
 
                 // Bot control --> AWSManagedRulesBotControlRuleSet //cuesta $10
                 // WordPress specific vulnerabilities --> cuesta $10
+
             ]
         });
 
