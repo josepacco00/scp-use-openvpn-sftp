@@ -10,11 +10,12 @@ interface BastionProps {
 }
 
 export class Bastion extends Construct {
+    public readonly ssmRole: iam.Role;
     constructor(scope: Construct, id: string, props: BastionProps) {
         super(scope, id);
 
         // Crear un rol para permitir el acceso mediante AWS Systems Manager
-        const ssmRole = new iam.Role(this, "BastionSSMRole", {
+        this.ssmRole = new iam.Role(this, "BastionSSMRole", {
             assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
             managedPolicies: [
                 iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMManagedInstanceCore")
@@ -32,19 +33,28 @@ export class Bastion extends Construct {
                 subnetType: ec2.SubnetType.PUBLIC,
             },
             securityGroup: props.bastionSG,
-            role: ssmRole,
+            role: this.ssmRole,
             associatePublicIpAddress: true,
             sourceDestCheck: false, //--> Desactiva la verificación de origen-destino para la instancia EC2.
             userData: ec2.UserData.forLinux({
                 shebang: `#!/bin/bash
-curl -o /tmp/openvpn-install.sh https://raw.githubusercontent.com/angristan/openvpn-install/refs/heads/master/openvpn-install.sh
-chmod +x /tmp/openvpn-install.sh
-AUTO_INSTALL=y /tmp/openvpn-install.sh
+            
+# Crear directorio para ssm-user ANTES de descargar
+mkdir -p /home/ssm-user
+
+# Resto de tu script original...
+curl -o /home/ssm-user/openvpn-install.sh https://raw.githubusercontent.com/angristan/openvpn-install/refs/heads/master/openvpn-install.sh
+chmod +x /home/ssm-user/openvpn-install.sh
+AUTO_INSTALL=y /home/ssm-user/openvpn-install.sh
+
+#curl -o /home/ssm-user/openvpn-install.sh https://raw.githubusercontent.com/angristan/openvpn-install/refs/heads/master/openvpn-install.sh
+#chmod +x /home/ssm-user/openvpn-install.sh
+#AUTO_INSTALL=y /home/ssm-user/openvpn-install.sh
 
 sed -i 's/push "redirect/# push "redirect/' /etc/openvpn/server.conf
 
 dnf install -y ipcalc
-eval "$(ipcalc -n -m ${process.env.VPC_CIDR})"
+eval "$(ipcalc -n -m ${props.vpc.vpcCidrBlock})"
 echo 'push "route' $NETWORK $NETMASK'"' >> /etc/openvpn/server.conf
 service openvpn-server@server restart
 
@@ -60,9 +70,6 @@ service iptables save
             }),
         });
 
-        // const cfnInstance = bastionHost.node.defaultChild as ec2.CfnInstance;
-        // cfnInstance.disableApiTermination = true;
-
         new ec2.CfnEIP(this, 'BastionEIP', {
             instanceId: bastionHost.instanceId,
             tags: [
@@ -70,39 +77,24 @@ service iptables save
             ]
         });
 
+
+        // CORREGIR: Usar index del forEach para IDs únicos
+        props.vpc.privateSubnets.forEach((subnet, index) => {
+            new ec2.CfnRoute(this, `PrivateSubnetRoute${index}`, {
+                routeTableId: subnet.routeTable.routeTableId,
+                instanceId: bastionHost.instanceId,
+                destinationCidrBlock: '0.0.0.0/0', // Rango VPN clients
+            });
+        });
+
         // let routeCount = 1;
+
         // props.vpc.privateSubnets.forEach((subnet) => {
-        //     new ec2.CfnRoute(this, `PrivateSubnetRoute${routeCount++}`, {
+        //     new ec2.CfnRoute(this, `PrivateSubnetRoute${routeCount}`, {
         //         routeTableId: subnet.routeTable.routeTableId,
         //         instanceId: bastionHost.instanceId,
         //         destinationCidrBlock: '0.0.0.0/0',
-        //     });
-        // });
-
-        // const amiInstance = new ec2.Instance(this, 'amiInstance', {
-        //     instanceName: `${props.env}-${props.project}-ami-instance`,
-        //     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO),
-        //     machineImage: ec2.MachineImage.latestAmazonLinux2023({
-        //         cachedInContext: true, // Prevent replace instance on future deploys
-        //     }),
-        //     vpc: props.vpc,
-        //     vpcSubnets: {
-        //         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-        //     },
-        //     securityGroup: props.bastionSG,
-        //     role: ssmRole,
-        //     associatePublicIpAddress: false,
-        // });
-
+        //     })
+        // })
     }
 }
-
-// # Verifica el log del User Data
-// cat /var/log/cloud-init-output.log
-
-// # en AmazonLinux2023, para conocer la metadata de la instancia mediante la ip 169.254.169.254, es con TOKEN
-// TOKEN=$(curl --request PUT "http://169.254.169.254/latest/api/token" --header "X-aws-ec2-metadata-token-ttl-seconds: 3600")
-// INSTANCE_METADATA=$(curl -s http://169.254.169.254/latest/meta-data/ --header "X-aws-ec2-metadata-token: $TOKEN")
-// IP_PUBLIC=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 --header "X-aws-ec2-metadata-token: $TOKEN")
-
-//https://medium.com/@sumitkumar.it81/get-instance-metadata-in-amazon-linux-2023-al2023-e4bf0611d0ad

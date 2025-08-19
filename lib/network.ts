@@ -8,13 +8,8 @@ export interface NetworkProps {
 
 export class Network extends Construct {
     public readonly vpc: ec2.Vpc;
-    public readonly albSG: ec2.SecurityGroup;
-    public readonly webLayerSG: ec2.SecurityGroup;
+    public readonly instanceSG: ec2.SecurityGroup;
     public readonly bastionSG: ec2.SecurityGroup;
-    public readonly databaseSG: ec2.SecurityGroup;
-    public readonly lambdaSG: ec2.SecurityGroup;
-    public readonly efsSG: ec2.SecurityGroup;
-
 
     constructor(scope: Construct, id: string, props: NetworkProps) {
         super(scope, id);
@@ -22,17 +17,6 @@ export class Network extends Construct {
         this.vpc = new ec2.Vpc(this, "VPC", {
             vpcName: `${props.env}-${props.project}-vpc`,
             natGateways: 0,
-            gatewayEndpoints: {
-                S3: {
-                    service: ec2.GatewayVpcEndpointAwsService.S3,
-                },
-                DynamoDB: {
-                    service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
-                },
-            },
-            availabilityZones: ["us-east-1c", "us-east-1d"],
-            //availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d"],
-            //availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f"],
             ipAddresses: ec2.IpAddresses.cidr(process.env.VPC_CIDR as string),
             restrictDefaultSecurityGroup: false,
             subnetConfiguration: [
@@ -54,27 +38,11 @@ export class Network extends Construct {
             ],
         });
 
-        this.databaseSG = new ec2.SecurityGroup(this, 'DatabaseSG', { vpc: this.vpc, description: 'Security Group para la Base de Datos' });
-        this.albSG = new ec2.SecurityGroup(this, 'AlbSG', { vpc: this.vpc, description: 'Security Group para el ALB' });
-        this.webLayerSG = new ec2.SecurityGroup(this, 'AppLayerSG', { vpc: this.vpc, description: 'Security Group para la Capa de Aplicaciones' });
         this.bastionSG = new ec2.SecurityGroup(this, 'BastionSG', { vpc: this.vpc, description: 'Security Group para el Bastion Host' });
-        this.lambdaSG = new ec2.SecurityGroup(this, 'LambdaSG', { vpc: this.vpc, description: 'Security Group para Lambda' });
-        this.efsSG = new ec2.SecurityGroup(this, 'EfsSG', { vpc: this.vpc, description: 'Security Group para EFS' });
+        this.instanceSG = new ec2.SecurityGroup(this, 'InstanceSG', { vpc: this.vpc, description: 'Security Group para las Instancias' });
 
-        this.efsSG.addIngressRule(this.webLayerSG, ec2.Port.tcp(2049), 'Allow access to EFS');
-        this.efsSG.addIngressRule(this.bastionSG, ec2.Port.tcp(2049), 'Allow access to EFS');
-        this.databaseSG.addIngressRule(this.webLayerSG, ec2.Port.tcp(3306), 'Allow access to Database');
-        this.databaseSG.addIngressRule(this.bastionSG, ec2.Port.tcp(3306), 'Allow access to Database');
-
-        this.webLayerSG.addIngressRule(this.albSG, ec2.Port.tcp(80), 'Allow access to ALB');
-        this.webLayerSG.addIngressRule(this.bastionSG, ec2.Port.allTraffic(), 'Allow access to Bastion');
-
-        //this.albSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow inbound traffic from anywhere on port 80');
-        //this.albSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow inbound traffic from anywhere on port 443');
-        this.albSG.addIngressRule(ec2.Peer.prefixList('pl-3b927c52'), ec2.Port.allTcp(), 'Allow trafic access from CDN');
-
-        this.bastionSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.allTraffic(), 'Allow all traffic from VPC')
         this.bastionSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(1194));
-        //this.apiOpenSearchALBSG.addIngressRule(ec2.Peer.prefixList('pl-3b927c52'), ec2.Port.allTcp(), 'Allow trafic access from CDN');
+        this.bastionSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(22), 'Allow SSH access only from VPC');
+        this.instanceSG.addIngressRule(this.bastionSG, ec2.Port.allTraffic(), 'Allow all traffic from Bastion');
     }
 }
