@@ -41,8 +41,8 @@ export class Network extends Construct {
         this.bastionSG = new ec2.SecurityGroup(this, 'BastionSG', { vpc: this.vpc, description: 'Security Group para el Bastion Host' });
         this.instanceSG = new ec2.SecurityGroup(this, 'InstanceSG', { vpc: this.vpc, description: 'Security Group para las Instancias' });
 
-        this.bastionSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(1194));
-        this.bastionSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.tcp(22), 'Allow SSH access only from VPC');
+        this.bastionSG.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.udp(1194), 'Allow traffic for internet for OpenVPN');
+        this.bastionSG.addIngressRule(ec2.Peer.ipv4(this.vpc.vpcCidrBlock), ec2.Port.allTraffic(), 'Allow all traffic from VPC');
         this.instanceSG.addIngressRule(this.bastionSG, ec2.Port.allTraffic(), 'Allow all traffic from Bastion');
     }
 }
